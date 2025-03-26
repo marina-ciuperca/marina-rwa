@@ -11,6 +11,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 
 contract DeployPropertySystemTest is Test {
     DeployPropertySystem deployer;
+    uint256 privateKey;
     address owner;
     address proxyAddress;
     address proxyAdminAddress;
@@ -22,8 +23,8 @@ contract DeployPropertySystemTest is Test {
 
     function setUp() public {
         // Use the same private key as in the deployment script
-        uint256 deployerPrivateKey = 0x1234;
-        owner = vm.addr(deployerPrivateKey);
+        privateKey = vm.envOr("PRIVATE_KEY", uint256(0x1234));
+        owner = vm.addr(privateKey);
         deployer = new DeployPropertySystem();
 
         // Deploy the system
@@ -46,22 +47,36 @@ contract DeployPropertySystemTest is Test {
         console.log("Token Address from Implementation:", tokenAddress);
 
         propertyToken = PropertyToken(tokenAddress);
-        console.log("PropertyToken instance created at:", address(propertyToken));
+        console.log(
+            "PropertyToken instance created at:",
+            address(propertyToken)
+        );
     }
 
     function testDeployPropertySystem() public view {
         // Verify proxy address is not zero
-        assertTrue(proxyAddress != address(0), "Proxy address should not be zero");
+        assertTrue(
+            proxyAddress != address(0),
+            "Proxy address should not be zero"
+        );
 
         // Verify ProxyAdmin was created
-        assertTrue(proxyAdminAddress != address(0), "ProxyAdmin address should not be zero");
+        assertTrue(
+            proxyAdminAddress != address(0),
+            "ProxyAdmin address should not be zero"
+        );
 
         // Verify initialization
-        assertTrue(address(propertyMethodsV1.propertyToken()) != address(0), "PropertyToken should be set");
+        assertTrue(
+            address(propertyMethodsV1.propertyToken()) != address(0),
+            "PropertyToken should be set"
+        );
 
         // Verify PropertyToken base URI
         assertEq(
-            propertyToken.uri(0), "https://api.example.com/token/0", "PropertyToken base URI should be set correctly"
+            propertyToken.uri(0),
+            "https://api.example.com/token/0",
+            "PropertyToken base URI should be set correctly"
         );
 
         // Log deployment summary
@@ -91,12 +106,22 @@ contract DeployPropertySystemTest is Test {
         propertyMethodsV1.createProperty(propertyId, totalShares);
 
         // Verify property creation
-        assertEq(propertyToken.balanceOf(alice, propertyId), totalShares, "Owner should have all shares");
+        assertEq(
+            propertyToken.balanceOf(alice, propertyId),
+            totalShares,
+            "Owner should have all shares"
+        );
 
         // Transfer some shares to Bob
         uint256 transferAmount = 400;
         vm.prank(alice);
-        propertyToken.safeTransferFrom(alice, bob, propertyId, transferAmount, "");
+        propertyToken.safeTransferFrom(
+            alice,
+            bob,
+            propertyId,
+            transferAmount,
+            ""
+        );
 
         // Verify balances after transfer
         assertEq(
@@ -104,7 +129,11 @@ contract DeployPropertySystemTest is Test {
             totalShares - transferAmount,
             "Alice should have remaining shares"
         );
-        assertEq(propertyToken.balanceOf(bob, propertyId), transferAmount, "Bob should have received shares");
+        assertEq(
+            propertyToken.balanceOf(bob, propertyId),
+            transferAmount,
+            "Bob should have received shares"
+        );
     }
 
     function testPropertyTokenDirectOperations() public {
@@ -121,7 +150,11 @@ contract DeployPropertySystemTest is Test {
         propertyMethodsV1.createProperty(propertyId, 1000);
 
         // Test URI
-        assertEq(propertyToken.uri(propertyId), "https://api.example.com/token/2", "Token URI should be correct");
+        assertEq(
+            propertyToken.uri(propertyId),
+            "https://api.example.com/token/2",
+            "Token URI should be correct"
+        );
 
         // Test batch transfer
         uint256[] memory ids = new uint256[](2);
@@ -135,9 +168,15 @@ contract DeployPropertySystemTest is Test {
         propertyToken.safeBatchTransferFrom(alice, bob, ids, amounts, "");
 
         // Verify batch transfer results
-        assertEq(propertyToken.balanceOf(bob, propertyId), 300, "Bob should have received batch transfer");
         assertEq(
-            propertyToken.balanceOf(alice, propertyId), 700, "Alice should have remaining shares after batch transfer"
+            propertyToken.balanceOf(bob, propertyId),
+            300,
+            "Bob should have received batch transfer"
+        );
+        assertEq(
+            propertyToken.balanceOf(alice, propertyId),
+            700,
+            "Alice should have remaining shares after batch transfer"
         );
 
         // Test approval
@@ -149,9 +188,15 @@ contract DeployPropertySystemTest is Test {
         propertyToken.safeTransferFrom(bob, alice, propertyId, 100, "");
 
         // Verify approved transfer
-        assertEq(propertyToken.balanceOf(alice, propertyId), 800, "Alice should have received approved transfer");
         assertEq(
-            propertyToken.balanceOf(bob, propertyId), 200, "Bob should have remaining shares after approved transfer"
+            propertyToken.balanceOf(alice, propertyId),
+            800,
+            "Alice should have received approved transfer"
+        );
+        assertEq(
+            propertyToken.balanceOf(bob, propertyId),
+            200,
+            "Bob should have remaining shares after approved transfer"
         );
     }
 }
