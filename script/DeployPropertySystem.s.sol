@@ -10,7 +10,6 @@ import {PropertyProxy} from "../src/PropertyProxy.sol";
 
 contract DeployPropertySystem is Script {
     function run() public returns (address proxyAddress) {
-        //uint256 deployerPrivateKey = vm.envOr("PRIVATE_KEY", uint256(0x1234));
         address deployerAddr = vm.envAddress("DEPLOYER_ADDRESS");
 
         vm.startBroadcast(deployerAddr);
