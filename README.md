@@ -1,126 +1,149 @@
-## Foundry
+# 🏗️ Real Estate RWA – Proxy-Based Fractional Ownership
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+> **A learning project for Encode Advanced Solidity Bootcamp**  
+> This Solidity project explores **upgradability** using **proxy contracts** in the context of **fractional real estate ownership**.
+>
+> It started as a basic ERC-1155 contract and was enhanced with **proxy patterns**, a migration from **Hardhat to Foundry**, and upgradeability support.
 
-Foundry consists of:
+---
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## 🏡 What is this project?
 
-## Documentation
+This project implements an **ERC-1155-based fractional property ownership system** where users can:
 
-https://book.getfoundry.sh/
+- **Create** a new property (mint an NFT representing it)
+- **Buy shares** of an existing property (fractional ownership)
 
-## Usage
+### 🚀 Why Upgradability?
 
-### Build
+Smart contracts are immutable by default. **Proxy contracts** allow **upgradeable logic** while **preserving user data**.
 
-```shell
-$ forge build
-```
+### ⚠️ Challenges & Considerations
 
-### Test
+- **Security Risks** → Poorly implemented proxies introduce vulnerabilities.
+- **Trust & Governance** → Users need assurance that upgrades are in their best interest.
+- **Gas Overhead** → Proxy calls have slightly higher gas costs than direct contract calls.
 
-```shell
-$ forge test
-```
+---
 
-### Format
+## 🏗️ Initial Setup
 
-```shell
-$ forge fmt
-```
+| Component             | Purpose                                                 |
+| --------------------- | ------------------------------------------------------- |
+| **PropertyToken**     | Immutable ERC-1155 Real Estate Token                    |
+| **ProxyAdmin**        | Admin contract for managing upgrades                    |
+| **PropertyProxy**     | Proxy contract that users interact with                 |
+| **PropertyMethodsV1** | First implementation contract containing business logic |
+| **PropertyMethodsV2** | New implementation with additional functionality        |
 
-### Gas Snapshots
+---
 
-```shell
-$ forge snapshot
-```
+## 🔄 Deployment & Upgrades
 
-### Anvil
+### **How the Proxy Works**
 
-```shell
-$ anvil
-```
+- **Users always interact with the proxy address.**
+- The **proxy delegates calls** to the current implementation (V1 or V2).
+- Storage **remains in the proxy contract**, so data is **preserved during upgrades**.
 
-### Deploy
+### **Initial Deployment**
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
-
-# Real Estate RWA
-## Initial Setup:
-* PropertyToken is the immutable Real Estate ERC1155 token
-* ProxyAdmin is the admin contract for the proxy contracts. Created internally.
-* PropertyProxy is the proxy contract that users interact with
-* PropertyMethodsV1 is the implementation contract containing the business logic
-* PropertyMethodsV2 is the implementation contract containing additional business logic
-
-
-## Deployment and Upgrades:
-All user interactions go through the proxy address
-The proxy delegates all calls to the current implementation
-
-### Initial deploy:
+```solidity
 // Deploy new implementation contract
-```shell
 PropertyMethodsV1 implementationV1 = new PropertyMethodsV1();
-```
 
-// PropertyProxy delegates to implementation contract using ProxyAdmin controller. 
-```shell
+// Deploy Proxy that delegates to the implementation contract
 TransparentUpgradeableProxy propertyProxy =
-            new TransparentUpgradeableProxy(address(implementationV1), deployerAddr, data);
+    new TransparentUpgradeableProxy(address(implementationV1), deployerAddr, data);
 ```
 
-### Upgrade:
-// Deploy revised implementation contract
-```shell
+### **Upgrading to a New Implementation**
+
+```
+// Deploy new version of the implementation contract
 PropertyMethodsV2 implementationV2 = new PropertyMethodsV2();
+
+// Upgrade the proxy to point to the new implementation
+proxyAdmin.upgradeAndCall{value: 0}(
+    ITransparentUpgradeableProxy(payable(proxyAddress)), address(implementationV2), data
+);
 ```
 
-// PropertyProxy delegates to new implementation contract, again using ProxyAdmin controller. 
-```shell
- proxyAdmin.upgradeAndCall{value: 0}(
-            ITransparentUpgradeableProxy(payable(proxyAddress)), address(implementationV2),
-            data
-        );
+---
+
+## 🔗 Contract Addresses (Sepolia Testnet)
+
+| Contract              | Address                                      |
+| --------------------- | -------------------------------------------- |
+| **PropertyToken**     | `0xF033FecBb9072438C23c64b203cE616AE15BCa9b` |
+| **PropertyMethodsV1** | `0xE2175e140541459C8D79B1A0fe444B2A31c31F02` |
+| **PropertyProxy**     | `0x7DEf8e8E03051bBCF7FCCaB8859345616aED8468` |
+| **PropertyMethodsV2** | `0x4d06571cd01ba9e1cff1e1775ab9a490783783e7` |
+
+### **Proxy Contract Confirmation**
+
+The screenshot below confirms that our proxy contract follows the **EIP-1967 Transparent Proxy pattern**, ensuring that:
+
+- **Storage remains intact** while upgrading.
+- **Users continue interacting with the same proxy address**.
+- **The implementation logic can be changed** without affecting user data.
+
+![Proxy Contract Confirmation](./images/impl_upgraded.png)
+
+To verify the proxy contract yourself, visit **[Sepolia Etherscan Proxy Contract Page](https://sepolia.etherscan.io/address/0x7DEf8e8E03051bBCF7FCCaB8859345616aED8468)**.
+
+---
+
+## ⚡ Quickstart
+
+### Clone the repository
+
+```
+git clone https://github.com/marina-ciuperca/marina-rwa
+cd marina-rwa
+forge build
 ```
 
-## Key Points:
-* The proxy contract holds all the storage data
-* Storage is preserved because all storage variables remain in the proxy contract's storage. 
-* The implementation contracts (PropertyMethodsV1 and PropertyMethodsV2) only contain the logic.
-* The PropertyToken is immutable and referenced by the implementation contracts.
-* Only the PropertyMethods contracts can be upgraded. The upgrade just changes which implementation contract the proxy points to.
-* Users always interact with the proxy contract address, not the implementation.
+### Deploy to Localhost
 
+```
+forge script script/DeployPropertySystem.s.sol --rpc-url http://127.0.0.1:8545 --private-key --broadcast -vv
+```
 
-## Deploy to Localhost Chain
-$ anvil
-$ forge script script/DeployPropertySystem.s.sol --rpc-url http://localhost:8545 --private-key <anvil(0)> --broadcast -vv
-$ forge script script/UpgradePropertySystem.s.sol --rpc-url http://localhost:8545 --private-key <anvil(0)> --broadcast -vv
+### Upgrade Locally
 
-## Run tests Localhost Chain
-forge test --match-path test/DeployPropertySystem.t.sol -vv
-forge test --match-path test/UpgradePropertySystem.t.sol -vv
+```
+forge script script/UpgradePropertySystem.s.sol --rpc-url http://127.0.0.1:8545 --private-key --broadcast -vv
+```
 
-or a single test
-forge test --rpc-url http://localhost:8545 --match-test testUpgradePreservesData -vv
+---
+
+## ✅ Testing & Coverage
+
+![All test pass](./images/tests.png)
+
+![Coverage](./images/coverage.png)
+
+**_Since the primary focus was proxy implementation, coverage was prioritized for relevant functionality._**
+
+---
+
+## 🔑 Key Takeaways
+
+✅ Proxy Contract Holds All Storage → Upgrades do not affect user balances.
+
+✅ Users Always Interact with the Proxy Address → The logic contract can change, but the interface remains the same.
+
+✅ Storage Layout Must Be Maintained → When upgrading, storage variables must remain in the same order.
+
+✅ The ERC-1155 PropertyToken is Immutable → Only the business logic (PropertyMethods) can be upgraded.
+
+---
+
+## 👥 Contributors
+
+@simonroope [Simon Roope](https://github.com/simonroope)
+
+@moojing [Mu-Jing-Tsai](https://github.com/moojing)
+
+@marina-ciuperca [Marina Ciuperca](https://github.com/marina-ciuperca)
