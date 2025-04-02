@@ -147,3 +147,10 @@ forge script script/UpgradePropertySystem.s.sol --rpc-url http://127.0.0.1:8545 
 @moojing [Mu-Jing-Tsai](https://github.com/moojing)
 
 @marina-ciuperca [Marina Ciuperca](https://github.com/marina-ciuperca)
+
+## 🚀 Acknowledgment
+
+This project is a learning initiative. The proxy for our Real Estate contract leverages OpenZeppelin's ERC1967 Transparent Upgradeable Proxy for security and upgradeability. Additionally, our base contract is derived from and modified from the open-source repository:
+
+🔗
+[EVM Real Estate Tokenized](https://github.com/Agent009/evm-real-estate-tokenised)
